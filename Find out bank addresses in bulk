@@ -1,0 +1,67 @@
+import pandas as pd
+import requests
+from tkinter import Tk, filedialog
+
+# 🧙 Select Excel file interactively
+def select_excel_file():
+    root = Tk()
+    root.withdraw()
+    file_path = filedialog.askopenfilename(
+        title="Select Excel File with IFSC Codes",
+        filetypes=[("Excel files", "*.xlsx *.xls")]
+    )
+    root.destroy()
+    return file_path
+
+# 🔍 Fetch and format branch info
+def get_branch_info(ifsc_code):
+    url = f"https://ifsc.razorpay.com/{ifsc_code}"
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+
+            bank = data.get("BANK", "NA")
+            branch = data.get("BRANCH", "NA")
+            address = data.get("ADDRESS", "NA")
+            taluka = data.get("CITY", "NA")
+            district = data.get("DISTRICT", "NA")
+            state = data.get("STATE", "NA")
+            pincode = data.get("PINCODE", "NA")
+            contact = data.get("CONTACT", "NA")
+
+            formatted = (
+                f"Bank: {bank}\n"
+                f"IFSC: {ifsc_code}\n\n"
+                f"Street address: {address}\n"
+                f"Taluka: {taluka}\n"
+                f"District: {district}\n"
+                f"State - Pincode: {state} - {pincode}\n"
+                f"Contact: {contact}"
+            )
+
+            return formatted
+        else:
+            return "Not Found"
+    except Exception as e:
+        return f"Error fetching: {e}"
+
+# 🔄 Main flow
+input_file = select_excel_file()
+if input_file:
+    df = pd.read_excel(input_file)
+    ifsc_list = df.iloc[:, 0].dropna().astype(str).tolist()  # assumes first column = IFSC codes
+
+    output = []
+    for ifsc in ifsc_list:
+        formatted = get_branch_info(ifsc.strip())
+        output.append({"IFSC": ifsc, "Branch Info": formatted})
+
+    output_df = pd.DataFrame(output)
+
+    # Save result
+    output_path = input_file.replace(".xlsx", "_formatted.xlsx")
+    output_df.to_excel(output_path, index=False)
+    print(f"✅ Output saved to: {output_path}")
+else:
+    print("❌ No file selected.")
