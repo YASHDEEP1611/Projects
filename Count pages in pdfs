@@ -1,0 +1,57 @@
+import os
+from PyPDF2 import PdfReader
+from tkinter import Tk, filedialog
+from openpyxl import Workbook
+
+# 🗂 Folder selection dialog
+def select_folder():
+    root = Tk()
+    root.withdraw()
+    folder_selected = filedialog.askdirectory(title="Select Folder Containing PDFs")
+    root.destroy()
+    return folder_selected
+
+# 📁 Save location dialog
+def select_save_path():
+    root = Tk()
+    root.withdraw()
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".xlsx",
+        filetypes=[("Excel Files", "*.xlsx")],
+        title="Save Excel Report As"
+    )
+    root.destroy()
+    return file_path
+
+# 📄 Count PDF pages and save to Excel
+def count_pages_and_export(folder_path, output_excel):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "PDF Page Count"
+    ws.append(["Filename", "Page Count"])
+
+    for filename in os.listdir(folder_path):
+        if filename.lower().endswith(".pdf"):
+            full_path = os.path.join(folder_path, filename)
+            try:
+                reader = PdfReader(full_path)
+                total_pages = len(reader.pages)
+                ws.append([filename, total_pages])
+                print(f"{filename}: {total_pages} pages")
+            except Exception as e:
+                ws.append([filename, f"Error: {e}"])
+                print(f"❌ Error reading {filename}: {e}")
+
+    wb.save(output_excel)
+    print(f"\n📊 Excel report saved to: {output_excel}")
+
+# 🚀 Run the script
+folder = select_folder()
+if folder:
+    output_excel = select_save_path()
+    if output_excel:
+        count_pages_and_export(folder, output_excel)
+    else:
+        print("❗ No save path selected.")
+else:
+    print("❗ No folder selected.")
